@@ -1,0 +1,6 @@
+numpy
+pylsl
+simplepyble
+pyxdf
+pandas
+matplotlib
