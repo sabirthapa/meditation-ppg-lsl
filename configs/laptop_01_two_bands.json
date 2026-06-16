@@ -1,0 +1,15 @@
+{
+  "laptop_id": "laptop_01_test",
+  "bands": [
+    {
+      "participant_id": "P01",
+      "device_identifier": "C141D912-00EE-A9F7-C821-C977EDF150AC",
+      "stream_name": "PPG_P01"
+    },
+    {
+      "participant_id": "P02",
+      "device_identifier": "704B175E-25AE-8333-4BFD-95F4F7409C9F",
+      "stream_name": "PPG_P02"
+    }
+  ]
+}
