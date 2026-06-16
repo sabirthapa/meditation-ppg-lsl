@@ -2,6 +2,13 @@ import argparse
 import pyxdf
 
 
+def get_info_value(info: dict, key: str, default: str = "") -> str:
+    value = info.get(key, [default])
+    if isinstance(value, list) and len(value) > 0:
+        return value[0]
+    return default
+
+
 def main():
     parser = argparse.ArgumentParser(description="Verify streams inside an XDF file.")
     parser.add_argument("xdf_path", help="Path to the .xdf file")
@@ -16,9 +23,10 @@ def main():
     for i, stream in enumerate(streams, start=1):
         info = stream["info"]
 
-        name = info["name"][0]
-        stream_type = info["type"][0]
-        channel_count = int(info["channel_count"][0])
+        name = get_info_value(info, "name")
+        stream_type = get_info_value(info, "type")
+        channel_count = int(get_info_value(info, "channel_count", "0"))
+
         sample_count = len(stream["time_series"])
         timestamp_count = len(stream["time_stamps"])
 
@@ -35,6 +43,13 @@ def main():
             print(f"First timestamp: {stream['time_stamps'][0]}")
             print(f"Last timestamp:  {stream['time_stamps'][-1]}")
             print(f"First sample:    {stream['time_series'][0]}")
+
+        if stream_type == "Markers" and sample_count > 0:
+            print()
+            print("Markers:")
+            for marker, timestamp in zip(stream["time_series"], stream["time_stamps"]):
+                marker_value = marker[0] if isinstance(marker, (list, tuple)) else marker
+                print(f"  {timestamp}: {marker_value}")
 
     print()
     print("XDF verification complete.")
