@@ -1,7 +1,7 @@
 import time
 
-from src.blewristband import BleDongle, BleScanInfo, WristbandFactory
 from src.band.ppg_session import PpgSession
+from src.band.single_band_connector import connect_single_band
 from src.lsl.ppg_outlet import PpgLslOutlet
 
 
@@ -12,62 +12,12 @@ SCAN_SECONDS = 10
 STREAM_SECONDS = 20
 
 
-def connect_target_wristband():
-    dongle = BleDongle()
-    selected_device = [None]
-
-    def on_device_found(_sender, event):
-        name = event.Name or "Unknown"
-        identifier = str(event.Address)
-
-        print(f"Found: {name} | {identifier}")
-
-        if identifier == TARGET_IDENTIFIER:
-            print("Target OS61 wristband found.")
-            selected_device[0] = BleScanInfo(event.peripheral)
-            dongle.StopScan()
-
-    dongle.DeviceFound += on_device_found
-
-    print("Initializing Bluetooth adapter...")
-    dongle.Connect()
-
-    print(f"Searching for target wristband for up to {SCAN_SECONDS} seconds...")
-    dongle.StartScan()
-
-    deadline = time.time() + SCAN_SECONDS
-
-    while selected_device[0] is None and time.time() < deadline:
-        time.sleep(0.1)
-
-    if selected_device[0] is None:
-        dongle.StopScan()
-        raise RuntimeError("Target wristband was not found.")
-
-    print("Connecting to wristband...")
-    factory = WristbandFactory(dongle)
-
-    if not factory.Connect(selected_device[0]):
-        raise RuntimeError("Failed to connect to the wristband.")
-
-    print("Connected successfully.")
-
-    print("Setting up OS61 target devices...")
-    factory.SetupOS61TargetDevices()
-
-    watch = factory.WristbandSystem
-    nrf = watch.GetDevice("NRF")
-    nim = watch.GetDevice("NIM")
-    optical = watch.GetDevice("OS61")
-
-    if not all((watch, nrf, nim, optical)):
-        raise RuntimeError("One or more wristband components could not be created.")
-
-    return watch, nrf, nim, optical
-
-
 def main():
-    watch, nrf, nim, optical = connect_target_wristband()
+    band = connect_single_band(
+        target_identifier=TARGET_IDENTIFIER,
+        scan_seconds=SCAN_SECONDS,
+        verbose=True,
+    )
 
     print("Creating LSL outlet...")
     ppg_outlet = PpgLslOutlet(
@@ -81,13 +31,18 @@ def main():
         participant_id=PARTICIPANT_ID,
         outlet=ppg_outlet,
     )
-    session.attach_devices(watch, nrf, nim, optical)
+    session.attach_devices(
+        band.watch,
+        band.nrf,
+        band.nim,
+        band.optical,
+    )
 
-    watch.Error += lambda _sender, event: print(f"Watch error: {event}")
-    watch.Disconnected += lambda _sender, event: print("Watch disconnected.")
+    band.watch.Error += lambda _sender, event: print(f"Watch error: {event}")
+    band.watch.Disconnected += lambda _sender, event: print("Watch disconnected.")
 
     print("Enabling BLE notifications...")
-    watch.EnableNotifications(True)
+    band.watch.EnableNotifications(True)
 
     print("Initializing optical registers...")
     session.init_registers()
@@ -99,10 +54,10 @@ def main():
     print()
 
     print(f"Starting sensors for {STREAM_SECONDS} seconds...")
-    watch.NotificationAvailable += session.on_notification
+    band.watch.NotificationAvailable += session.on_notification
 
     try:
-        nrf.EnableSensors(True)
+        band.nrf.EnableSensors(True)
 
         for remaining in range(STREAM_SECONDS, 0, -1):
             result = session.summary()
@@ -115,18 +70,19 @@ def main():
 
     finally:
         print("Stopping sensors...")
+
         try:
-            nrf.EnableSensors(False)
+            band.nrf.EnableSensors(False)
         except Exception as exc:
             print(f"Warning: failed to disable sensors: {exc}")
 
         try:
-            watch.NotificationAvailable -= session.on_notification
+            band.watch.NotificationAvailable -= session.on_notification
         except Exception as exc:
             print(f"Warning: failed to remove notification callback: {exc}")
 
         try:
-            watch.EnableNotifications(False)
+            band.watch.EnableNotifications(False)
         except Exception as exc:
             print(f"Warning: failed to disable BLE notifications: {exc}")
 
