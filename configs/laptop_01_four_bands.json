@@ -3,22 +3,22 @@
   "bands": [
     {
       "participant_id": "P01",
-      "device_identifier": "C17B84E5-26CD-C838-027F-CBBDCDCEA5B5",
+      "device_identifier": "ea:20:10:76:36:57",
       "stream_name": "PPG_P01"
     },
     {
       "participant_id": "P02",
-      "device_identifier": "704B175E-25AE-8333-4BFD-95F4F7409C9F",
+      "device_identifier": "fb:42:9e:0e:33:5c",
       "stream_name": "PPG_P02"
     },
     {
       "participant_id": "P03",
-      "device_identifier": "EEF78C20-05AA-A238-C5A9-245F25AE293D",
+      "device_identifier": "de:24:10:2e:5a:17",
       "stream_name": "PPG_P03"
     },
     {
       "participant_id": "P04",
-      "device_identifier": "C141D912-00EE-A9F7-C821-C977EDF150AC",
+      "device_identifier": "f9:7d:63:c1:73:4b",
       "stream_name": "PPG_P04"
     }
   ]

@@ -7,7 +7,13 @@ from src.lsl.ppg_outlet import PpgLslOutlet
 from src.utils.config_loader import load_config
 
 
-def start_band_recorder(band_config: dict, scan_seconds: int):
+def start_band_recorder(
+    band_config: dict,
+    scan_seconds: int,
+    match_by_name: bool = False,
+    name_filter: str = "OS61",
+    exclude_addresses: set = None,
+):
     participant_id = band_config["participant_id"]
     device_identifier = band_config["device_identifier"]
     stream_name = band_config["stream_name"]
@@ -16,7 +22,10 @@ def start_band_recorder(band_config: dict, scan_seconds: int):
     print("Starting band recorder")
     print("----------------------")
     print(f"Participant ID: {participant_id}")
-    print(f"Device identifier: {device_identifier}")
+    if match_by_name:
+        print(f"Matching by name: {name_filter} (config address ignored)")
+    else:
+        print(f"Device identifier: {device_identifier}")
     print(f"LSL stream name: {stream_name}")
     print()
 
@@ -24,7 +33,13 @@ def start_band_recorder(band_config: dict, scan_seconds: int):
         target_identifier=device_identifier,
         scan_seconds=scan_seconds,
         verbose=True,
+        match_by_name=match_by_name,
+        name_filter=name_filter,
+        exclude_addresses=exclude_addresses,
     )
+
+    if match_by_name:
+        print(f"[{participant_id}] Connected to band at address {band.identifier}")
 
     ppg_outlet = PpgLslOutlet(
         participant_id=participant_id,
@@ -110,6 +125,20 @@ def main():
     parser.add_argument("--config", required=True, help="Path to laptop config JSON.")
     parser.add_argument("--scan-seconds", type=int, default=10, help="BLE scan timeout per band.")
     parser.add_argument("--duration", type=int, default=60, help="Recording duration in seconds.")
+    parser.add_argument(
+        "--match-by-name",
+        action="store_true",
+        help=(
+            "Connect to bands by advertised name instead of the config address. "
+            "Each band is claimed in discovery order and mapped to participants "
+            "in config order. Use this on Windows, where OS61 BLE addresses rotate."
+        ),
+    )
+    parser.add_argument(
+        "--device-name",
+        default="OS61",
+        help="Substring of the advertised name to match when using --match-by-name.",
+    )
     args = parser.parse_args()
 
     config = load_config(args.config)
@@ -120,6 +149,7 @@ def main():
     print(f"Configured bands: {len(config['bands'])}")
 
     recorders = []
+    connected_addresses = set()
 
     try:
         print()
@@ -128,7 +158,11 @@ def main():
             recorder = start_band_recorder(
                 band_config=band_config,
                 scan_seconds=args.scan_seconds,
+                match_by_name=args.match_by_name,
+                name_filter=args.device_name,
+                exclude_addresses=connected_addresses,
             )
+            connected_addresses.add(recorder["band"].identifier)
             recorders.append(recorder)
 
         print()

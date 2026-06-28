@@ -40,9 +40,19 @@ def main():
         print(f"Timestamps: {timestamp_count}")
 
         if sample_count > 0:
-            print(f"First timestamp: {stream['time_stamps'][0]}")
-            print(f"Last timestamp:  {stream['time_stamps'][-1]}")
+            first_timestamp = stream["time_stamps"][0]
+            last_timestamp = stream["time_stamps"][-1]
+
+            print(f"First timestamp: {first_timestamp}")
+            print(f"Last timestamp:  {last_timestamp}")
             print(f"First sample:    {stream['time_series'][0]}")
+
+            if sample_count > 1:
+                duration = last_timestamp - first_timestamp
+                estimated_srate = (sample_count - 1) / duration if duration > 0 else 0
+
+                print(f"Duration: {duration:.2f} seconds")
+                print(f"Estimated sample rate: {estimated_srate:.2f} Hz")
 
         if stream_type == "Markers" and sample_count > 0:
             print()

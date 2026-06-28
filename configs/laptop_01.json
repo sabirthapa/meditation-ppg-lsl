@@ -1,0 +1,20 @@
+{
+  "laptop_id": "laptop_01",
+  "bands": [
+    {
+      "participant_id": "john",
+      "device_identifier": "fb:42:9e:0e:33:5c",
+      "stream_name": "john_ppg"
+    },
+    {
+      "participant_id": "nick",
+      "device_identifier": "ea:20:10:76:36:57",
+      "stream_name": "nick_ppg"
+    },
+    {
+      "participant_id": "mark",
+      "device_identifier": "f9:7d:63:c1:73:4b",
+      "stream_name": "mark_ppg"
+    }
+  ]
+}

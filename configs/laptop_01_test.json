@@ -3,7 +3,7 @@
   "bands": [
     {
       "participant_id": "P_TEST",
-      "device_identifier": "C141D912-00EE-A9F7-C821-C977EDF150AC",
+      "device_identifier": "ea:20:10:76:36:57",
       "stream_name": "PPG_P_TEST"
     }
   ]
