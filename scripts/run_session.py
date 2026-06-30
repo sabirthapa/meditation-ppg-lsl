@@ -32,6 +32,7 @@ def main():
     parser.add_argument("--reconnect-backoff", type=float, default=5.0, help="Min seconds between reconnect attempts per band.")
     parser.add_argument("--stall-seconds", type=int, default=8, help="Treat a connected band with no new samples for this long as dropped.")
     parser.add_argument("--no-reconnect", action="store_true", help="Disable mid-session auto-reconnect.")
+    parser.add_argument("--battery-interval", type=int, default=60, help="Seconds between battery re-reads per band (0 disables periodic reads).")
     args = parser.parse_args()
 
     config = load_config(args.config)
@@ -91,6 +92,7 @@ def main():
 
     # ── recording loop ──────────────────────────────────────────────────────
     print("\nRecording...\n")
+    last_battery_poll = time.monotonic()
     try:
         for remaining in range(args.duration, 0, -1):
             for r in connected:
@@ -103,12 +105,19 @@ def main():
                         r.connected = False
                     r.try_reconnect(backoff_seconds=args.reconnect_backoff, verbose=True)
 
+            # Periodically re-read battery (kept infrequent so it doesn't steal BLE airtime).
+            if args.battery_interval > 0 and (time.monotonic() - last_battery_poll) >= args.battery_interval:
+                for r in connected:
+                    r.read_battery()
+                last_battery_poll = time.monotonic()
+
             parts = []
             for r in connected:
                 s = r.session.summary()
                 state = "OK " if r.connected else "DOWN"
                 parts.append(
                     f"{r.participant_id}[{state}] samp={s['sample_count']}"
+                    + (f" bat={r.battery}" if r.battery is not None else "")
                     + (f" rc={r.reconnect_count}" if r.reconnect_count else "")
                 )
             print(f"{remaining:4d}s | " + " | ".join(parts))
@@ -131,6 +140,7 @@ def main():
         status = "connected" if r in connected else "NEVER CONNECTED"
         print(f"\n{r.participant_id} ({r.stream_name}) [{status}]")
         print(f"  Device: {r.device_identifier}")
+        print(f"  Battery:       {r.battery}")
         print(f"  Notifications: {s['notification_count']}")
         print(f"  Ignored:       {s['ignored_notification_count']}")
         print(f"  Samples:       {s['sample_count']}")

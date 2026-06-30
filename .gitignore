@@ -14,3 +14,7 @@ ENV/
 .DS_Store
 Thumbs.db
 *.swp
+
+# Local recordings / data output
+recordings/
+*.xdf

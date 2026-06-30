@@ -47,6 +47,7 @@ class BandRunner:
         self.connected = False
         self.reconnect_count = 0
         self.ever_connected = False
+        self.battery = None  # last-read firmware battery value (None until read)
 
         # health bookkeeping (driven by the recorder loop)
         self.last_sample_count = 0
@@ -84,6 +85,7 @@ class BandRunner:
             self.connected = True
             self.ever_connected = True
             self.stalled_seconds = 0
+            self.read_battery()  # initial reading at connect
             return True
         except Exception as exc:
             if verbose:
@@ -104,6 +106,17 @@ class BandRunner:
     def start_sensors(self):
         if self.band is not None:
             self.band.nrf.EnableSensors(True)
+
+    def read_battery(self):
+        """Read the band's battery level (best-effort; never disrupts the session)."""
+        if self.band is None or not self.connected:
+            return self.battery
+        try:
+            self.battery = self.band.nrf.ReadBattery()
+        except Exception:
+            # A failed/garbled read during heavy streaming is harmless; keep last value.
+            pass
+        return self.battery
 
     def try_reconnect(self, backoff_seconds: float = 5.0, verbose: bool = True) -> bool:
         """One reconnect attempt, rate-limited by backoff. Returns True on success."""

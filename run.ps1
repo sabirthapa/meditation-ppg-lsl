@@ -16,6 +16,9 @@ if (-not (Test-Path $venvPy)) {
 }
 
 $env:PYTHONUTF8 = "1"
+# Make `import src...` work on any fresh clone without extra setup
+# (the venv is recreated per machine, so we can't rely on a .pth file).
+$env:PYTHONPATH = $root
 Set-Location $root
 & $venvPy @args
 exit $LASTEXITCODE
